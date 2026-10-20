@@ -1,0 +1,67 @@
+name: Fetch libs
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Download npm packages
+        run: |
+          set -e
+          for pkg in pdfjs-dist katex tesseract.js tesseract.js-core @tesseract.js-data/eng @tesseract.js-data/chi_tra; do
+            d=/tmp/pk/$(echo "$pkg" | tr '/@' '__')
+            mkdir -p "$d"
+            (cd "$d" && npm pack "$pkg" --silent && tar -xzf ./*.tgz)
+          done
+          ls /tmp/pk
+
+      - name: Copy pdf.js and KaTeX
+        run: |
+          set -e
+          mkdir -p lib/katex/fonts
+          P=/tmp/pk/pdfjs-dist/package
+          cp "$P/build/pdf.min.mjs" "$P/build/pdf.worker.min.mjs" lib/
+          K=/tmp/pk/katex/package/dist
+          cp "$K/katex.min.js" "$K/katex.min.css" lib/katex/
+          cp "$K/contrib/auto-render.min.js" lib/katex/
+          cp "$K"/fonts/*.woff2 "$K"/fonts/*.woff "$K"/fonts/*.ttf lib/katex/fonts/
+
+      - name: Copy Tesseract OCR files
+        continue-on-error: true
+        run: |
+          set -e
+          T=/tmp/pk/tesseract.js/package
+          cp "$T/dist/tesseract.min.js" lib/
+          cp "$T/dist/worker.min.js" lib/
+          cp /tmp/pk/tesseract.js-core/package/tesseract-core* lib/
+          mkdir -p lib/tessdata
+          for l in eng chi_tra; do
+            dir="/tmp/pk/_tesseract.js-data_$l/package"
+            f=$(find "$dir" -name "$l.traineddata.gz" | sort | grep -m1 best_int || true)
+            if [ -z "$f" ]; then f=$(find "$dir" -name "$l.traineddata.gz" | head -1); fi
+            cp "$f" lib/tessdata/
+          done
+
+      - name: Show result
+        run: |
+          du -sh lib
+          find lib -type f | sort
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add lib
+          git diff --cached --quiet || git commit -m "Add third-party libs"
+          git push
