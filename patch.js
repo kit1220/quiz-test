@@ -1,6 +1,6 @@
 "use strict";
-// 功能擴充:題目顯示講義名稱 + 「notes」按鈕檢視並標出講義中的相關知識點
-// 必須在 app.js 之後載入。
+// Extension: show note name on questions + "View notes" button that highlights the related passage.
+// Must be loaded after app.js and i18n.js.
 (() => {
   /* ---- pure helpers (start) ---- */
   const stem = s => String(s || "").replace(/\.md$/i, "");
@@ -101,7 +101,7 @@
   ].join("\n");
   document.head.append(style);
 
-  // 1. 題目標籤加上講義名稱
+  // 1. Show the note name in the question tag
   const _renderQuiz = renderQuiz;
   renderQuiz = function () {
     _renderQuiz();
@@ -110,16 +110,16 @@
       if (!q) return;
       el.textContent = "Q" + (i + 1) + "  [" + q.course + "]" +
         (q.source ? "{" + stem(q.source) + "}" : "") + "  " +
-        (q.type === "mcq" ? "選擇題" : "簡答題");
+        (q.type === "mcq" ? tr("typeMcq") : tr("typeShort"));
     });
   };
 
-  // 2. 出題時要求模型附上講義原文出處(evidence)
+  // 2. Ask the model for a verbatim evidence quote from the notes
   const _buildPrompt = buildPrompt;
   buildPrompt = function (course, n, text) {
     return _buildPrompt(course, n, text).replace(
       "</question>",
-      "<evidence>講義中支持這題答案的一句或一小段原文,必須逐字複製自講義片段,不要改寫,不超過 150 字</evidence>\n</question>");
+      "<evidence>one sentence or short passage from the notes that supports the answer; it must be copied VERBATIM from the excerpt (no paraphrasing), at most 150 characters</evidence>\n</question>");
   };
   const _parseQuestions = parseQuestions;
   parseQuestions = function (raw) {
@@ -132,7 +132,7 @@
     return qs;
   };
 
-  // 3. notes 按鈕與檢視視窗
+  // 3. "View notes" button and viewer
   function closeModal() {
     const o = document.getElementById("nvOverlay");
     if (o) o.remove();
@@ -143,12 +143,12 @@
     const body = h("div", { class: "nv-body" });
     body.append(document.createTextNode(note.text.slice(0, loc.start)), mark,
       document.createTextNode(note.text.slice(loc.end)));
-    const hint = !loc.end ? "找不到相關段落" :
-      loc.exact ? "已標出講義中的相關原文" : "找不到逐字相同的原文,已標出最相近的段落(可能不完全準確)";
+    const hint = !loc.end ? tr("hintNone") :
+      loc.exact ? tr("hintExact") : tr("hintFuzzy");
     const box = h("div", { class: "nv-box" },
       h("div", { class: "nv-head" },
         h("b", {}, q.course + " / " + note.name),
-        h("button", { class: "btn sec", onclick: closeModal }, "關閉")),
+        h("button", { class: "btn sec", onclick: closeModal }, tr("close"))),
       h("div", { class: "nv-hint" }, hint),
       body);
     const overlay = h("div", { class: "nv-overlay", id: "nvOverlay",
@@ -160,7 +160,7 @@
     const notes = (await DB.all("notes")).filter(n => n.course === q.course);
     let cands = notes.filter(n => n.name === q.source);
     if (!cands.length) cands = notes;
-    if (!cands.length) return alert("找不到這份講義(可能已被刪除)");
+    if (!cands.length) return alert(tr("noteGone"));
     let best = null;
     for (const n of cands) {
       const loc = locate(n.text, q);
@@ -176,7 +176,7 @@
     session.items.forEach((q, i) => {
       const r = document.getElementById("r" + i);
       if (r && !r.querySelector(".nv-btn"))
-        r.append(h("button", { class: "btn sec nv-btn", onclick: () => showNote(q) }, "📖 notes"));
+        r.append(h("button", { class: "btn sec nv-btn", onclick: () => showNote(q) }, "📖 " + tr("viewNotes")));
     });
   };
 })();
