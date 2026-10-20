@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="zh-Hant"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self' https://*.workers.dev; worker-src 'self' blob:; object-src 'none'; base-uri 'none'">
+<meta name="theme-color" content="#2b6cb0">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="lib/katex/katex.min.css">
+<title>每日測驗</title>
+</head><body>
+<header><b>📚 每日測驗</b><span id="net"></span></header>
+<nav>
+  <button data-view="quiz" class="on">測驗</button>
+  <button data-view="notes">講義</button>
+  <button data-view="stats">成績</button>
+  <button data-view="settings">設定</button>
+</nav>
+<div id="status"></div>
+<main>
+
+<section id="v-quiz" class="on">
+  <div class="card">
+    <h3>選擇課程</h3>
+    <div id="courseBoxes"></div>
+    <label>每個課程題數</label>
+    <input type="number" id="perCourse" min="1" max="30" value="5">
+    <button class="btn" id="startQuiz">開始測驗</button>
+    <button class="btn sec" id="fillBank">下載題庫(離線用)</button>
+    <div class="small">「下載題庫」會用上面的題數,為每個勾選的課程預先出題並存在手機,之後沒有網絡也能作答選擇題。</div>
+    <div class="small" id="bankInfo"></div>
+  </div>
+  <div id="quizArea"></div>
+</section>
+
+<section id="v-notes">
+  <div class="card">
+    <h3>新增講義</h3>
+    <label>課程名稱(資料夾)</label>
+    <input type="text" id="noteCourse" list="courseList" placeholder="例如 ge2340_ai">
+    <datalist id="courseList"></datalist>
+    <label>選擇檔案(.md / .txt 可多選;.pdf 一次一個)</label>
+    <input type="file" id="noteFile" accept=".md,.txt,.pdf" multiple>
+    <div id="editor" hidden>
+      <label>檔名</label><input type="text" id="noteName">
+      <label>內容(可編輯,確認沒問題再儲存)</label>
+      <textarea id="noteText" rows="14"></textarea>
+      <button class="btn" id="saveNote">儲存講義</button>
+      <button class="btn sec" id="cancelNote">取消</button>
+    </div>
+  </div>
+  <div id="noteList"></div>
+</section>
+
+<section id="v-stats">
+  <div class="card"><h3>各課程成績</h3><div id="courseStats"></div></div>
+  <div class="card"><h3>各講義(權重越高越常出現)</h3><div id="fileStats"></div></div>
+  <div class="card">
+    <h3>待批改的簡答題</h3>
+    <div id="pendingInfo"></div>
+    <button class="btn" id="gradePending">現在批改</button>
+  </div>
+  <div class="card">
+    <h3>備份與還原</h3>
+    <button class="btn" id="exportBtn">匯出備份(.json)</button>
+    <label>匯入備份(會覆蓋目前資料)</label>
+    <input type="file" id="importFile" accept=".json">
+    <div class="small">備份不含 API Key。</div>
+  </div>
+</section>
+
+<section id="v-settings">
+  <div class="card">
+    <label>DeepSeek API Key(只存在這支手機)</label>
+    <input type="password" id="apiKey" autocomplete="off">
+    <label>模型</label>
+    <input type="text" id="model">
+    <label>OCR 語言(掃描 PDF 用)</label>
+    <select id="ocrLang">
+      <option value="eng">英文</option>
+      <option value="chi_tra+eng">繁體中文 + 英文</option>
+    </select>
+    <button class="btn" id="saveSettings">儲存設定</button>
+    <button class="btn sec" id="persistBtn">要求持久儲存</button>
+    <div class="small" id="storageInfo"></div>
+    <p class="small">提醒:Key 存在瀏覽器儲存空間,請在 DeepSeek 帳號設定較低的儲值上限。講義內容會經 Worker 送到 DeepSeek 處理。</p>
+  </div>
+</section>
+
+</main>
+<script src="config.js"></script>
+<script src="lib/katex/katex.min.js"></script>
+<script src="lib/katex/auto-render.min.js"></script>
+<script src="app.js"></script>
+</body></html>

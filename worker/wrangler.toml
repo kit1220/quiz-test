@@ -1,0 +1,10 @@
+name = "quiz-proxy"
+main = "worker.js"
+compatibility_date = "2026-10-01"
+
+[vars]
+# 改成你的網站來源(不含結尾斜線),多個用逗號分隔
+ALLOWED_ORIGIN = "https://YOUR-NAME.github.io"
+
+# 限流(可選):請依 Cloudflare 官方 Rate Limiting 文件設定 RATE_LIMITER 綁定,
+# 沒設定時程式會自動略過限流。
