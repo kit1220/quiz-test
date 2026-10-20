@@ -1,5 +1,6 @@
 "use strict";
 // Extension: show note name on questions + "View notes" button that highlights the related passage.
+// Also adds a per-course "delete scores" button to the Scores table.
 // Must be loaded after app.js and i18n.js.
 (() => {
   /* ---- pure helpers (start) ---- */
@@ -177,6 +178,30 @@
       const r = document.getElementById("r" + i);
       if (r && !r.querySelector(".nv-btn"))
         r.append(h("button", { class: "btn sec nv-btn", onclick: () => showNote(q) }, "📖 " + tr("viewNotes")));
+    });
+  };
+
+  // 4. Delete the score records of one course (button on each row of the course score table)
+  const SC = {
+    "zh-Hant": { del: "刪除成績", confirm: "刪除「{0}」的所有成績紀錄?(不會刪除筆記)" },
+    en: { del: "Delete scores", confirm: "Delete all score records for \"{0}\"? (Notes are not deleted.)" },
+    "zh-Hans": { del: "删除成绩", confirm: "删除“{0}”的所有成绩记录?(不会删除笔记)" },
+  };
+  const sc = (k, v) => (SC[getLang()] || SC["zh-Hant"])[k].replace("{0}", () => v);
+  const _refreshStats = refreshStats;
+  refreshStats = async function () {
+    await _refreshStats();
+    const rows = [...document.querySelectorAll("#courseStats table tr")];
+    rows.forEach((row, i) => {
+      if (i === 0) { row.append(h("th", {})); return; }
+      const course = row.cells[0].textContent;
+      row.append(h("td", {}, h("button", { class: "btn danger", onclick: async () => {
+        if (!confirm(sc("confirm", course))) return;
+        delete stats.courses[course];
+        for (const k of Object.keys(stats.files)) if (k.startsWith(course + "/")) delete stats.files[k];
+        await saveStats();
+        refreshAll();
+      } }, sc("del"))));
     });
   };
 })();
