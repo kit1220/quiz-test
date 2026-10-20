@@ -19,11 +19,16 @@ jobs:
       - name: Download npm packages
         run: |
           set -e
-          for pkg in pdfjs-dist katex tesseract.js tesseract.js-core @tesseract.js-data/eng @tesseract.js-data/chi_tra; do
+          for pkg in pdfjs-dist katex tesseract.js @tesseract.js-data/eng @tesseract.js-data/chi_tra; do
             d=/tmp/pk/$(echo "$pkg" | tr '/@' '__')
             mkdir -p "$d"
             (cd "$d" && npm pack "$pkg" --silent && tar -xzf ./*.tgz)
           done
+          # Pin tesseract.js-core to the version range required by tesseract.js
+          CV=$(node -p "require('/tmp/pk/tesseract.js/package/package.json').dependencies['tesseract.js-core']")
+          echo "tesseract.js requires core: $CV"
+          mkdir -p /tmp/pk/tesseract.js-core
+          (cd /tmp/pk/tesseract.js-core && npm pack "tesseract.js-core@$CV" --silent && tar -xzf ./*.tgz)
           ls /tmp/pk
 
       - name: Copy pdf.js and KaTeX
@@ -45,6 +50,15 @@ jobs:
           cp "$T/dist/tesseract.min.js" lib/
           cp "$T/dist/worker.min.js" lib/
           cp /tmp/pk/tesseract.js-core/package/tesseract-core* lib/
+          # Fallback: if relaxedsimd builds are missing, alias the simd builds
+          for v in "" "-lstm"; do
+            if [ ! -e "lib/tesseract-core-relaxedsimd$v.wasm.js" ]; then
+              echo "relaxedsimd$v missing, aliasing simd$v"
+              for e in .js .wasm .wasm.js; do
+                cp "lib/tesseract-core-simd$v$e" "lib/tesseract-core-relaxedsimd$v$e"
+              done
+            fi
+          done
           mkdir -p lib/tessdata
           for l in eng chi_tra; do
             dir="/tmp/pk/_tesseract.js-data_$l/package"
