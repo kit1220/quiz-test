@@ -1,5 +1,5 @@
-const CACHE = "quiz-v2";
-const SHELL = ["./", "index.html", "app.js", "style.css", "config.js", "manifest.webmanifest"];
+const CACHE = "quiz-v3";
+const SHELL = ["./", "index.html", "app.js", "patch.js", "i18n.js", "style.css", "config.js", "manifest.webmanifest"];
 
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c =>
